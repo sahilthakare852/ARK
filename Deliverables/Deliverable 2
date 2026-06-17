@@ -1,0 +1,86 @@
+# Deliverable 2 — Build, packaging, and release strategy
+
+## Pipeline overview
+
+Two artifact types, one constraint that shapes everything: every image, chart, and binary the appliance will ever need at runtime must be present in the artifact at the time it leaves Superna's build system. Nothing is fetched at install time.
+
+![Build pipeline](Diagrams/PipelineFlow.png)
+
+Bitbucket Pipelines orchestrates the build on self-hosted runners. Self-hosted runners are non-negotiable: OVA construction requires tens of gigabytes of disk space, access to a hypervisor toolchain (QEMU/KVM or VMware's OVF tool), and build times that would exhaust cloud runner quotas. Runners must be network-isolated from production but have internet access for pulling upstream images at build time.
+
+The build stage does one thing most Kubernetes pipeline tutorials omit and that will silently break air-gapped deployments if missed: every Helm chart's default image references point at public registries (`registry.k8s.io`, `docker.io`, etc.). Before images are loaded into the Zot registry in the OVA, every chart's `values.yaml` and image reference is rewritten to point at the local Zot path. This rewrite happens once at build time and is baked into the chart tarballs inside the artifact. At runtime, every image pull goes to Zot — there are no fallback paths to public registries, by construction.
+
+Scan and sign run as blocking pipeline stages: a scan failure stops promotion, not just flags a warning. JFrog Xray monitors Artifactory continuously after artifacts are stored — if a new CVE is disclosed against a dependency in a released artifact, Xray flags it and a rebuild is triggered automatically, as shown by the feedback loop in the pipeline diagram.
+
+Promotion is a manual gate. Staging artifacts are immutable once signed; promotion is a metadata operation in Artifactory (staging → release repository), not a rebuild. Anything requiring a change after signing gets a new version number.
+
+---
+
+## What is in each artifact
+
+### OVA (initial install)
+
+The OVA is the complete, self-contained virtual machine image for first deployment. It contains:
+
+- **openSUSE MicroOS base** — immutable root filesystem with transactional-update and Btrfs subvolume layout. PVC mount paths are on a separate subvolume excluded from OS snapshots.
+- **Platform binaries** — RKE2 server and agent binaries, `arkctl` CLI, bootstrap agent systemd service.
+- **Pre-seeded Zot registry** — every container image the platform needs to reach a healthy state, loaded at build time. Includes: kube-vip, cert-manager and its webhook images, ingress-nginx, Longhorn components (manager, driver, CSI plugin, UI), module operator, identity service. No runtime internet access required for any of these.
+- **Platform Helm charts** — stored as OCI artifacts inside Zot, alongside the images they deploy.
+
+Modules are not in the OVA — they ship as separate bundles because module teams have independent release cadences and customers may want only a subset of Superna's products.
+
+Size is managed through a pipeline gate: the build fails if the OVA exceeds a defined threshold. The exact threshold is a product decision (driven by how customers receive and stage artifacts) captured as open question OQ-3 in the risk register.
+
+### Upgrade bundle (in-place upgrades)
+
+A self-extracting archive containing:
+
+- **OS update package** — compatible with `transactional-update` on openSUSE MicroOS.
+- **Container images** — complete OCI tarballs for all changed platform components. Complete tarballs rather than layer deltas: the correctness argument outweighs the size argument for V1. Delta bundles require tracking layer provenance across versions and more complex reconstruction logic — toil that belongs in a later iteration when bundle size has been measured as a real customer problem.
+- **Updated Helm charts** — full chart tarballs for any chart changed in this release.
+- **Bundle manifest** — declares the bundle's target version, the minimum required source version, and SHA-256 checksums for all included artifacts.
+- **Detached signature + SBOM** — cosign detached signature and syft software bill of materials, stored alongside the bundle in Artifactory and included inside the bundle so the customer retains them after download.
+
+---
+
+## Offline / air-gapped installation
+
+### Initial deploy
+
+The customer downloads the OVA from Superna's customer portal to an internet-connected machine and transfers it to their environment by whatever mechanism the site permits (internal file share, USB drive, secure transfer). They import the OVA into vCenter using the standard OVF import wizard, fill in the vApp Options form (IP address, netmask, gateway, admin credential, optional VIP and NTP server), and power on the VM. The bootstrap flow described in Deliverable 1 runs autonomously. The customer has a working appliance without touching a keyboard during first boot.
+
+For non-VMware OVF-capable hypervisors, the customer uses their hypervisor's equivalent import flow; cloud-init's generic OVF datasource reads configuration from the standard `ovf-env.xml` file that OVF-compatible tooling generates automatically.
+
+### Multi-node expansion
+
+Every node — control-plane or worker — deploys from the same OVA. The OVF properties include a `role` field and a `join-endpoint` field. An initialising node leaves both blank; the bootstrap agent creates a new cluster. A joining node sets `role` to `server` (second or third control-plane node) or `worker`, and sets `join-endpoint` to the first node's IP address plus the join token displayed by `arkctl cluster token`. No shell access between nodes, no shared state prior to join.
+
+`arkctl node add --role server` enforces the 3-node control-plane floor and actively blocks a 2-node topology. Adding a second control-plane node without a third leaves the cluster unable to form quorum on either node's failure — worse than single-node.
+
+### Adding a module
+
+The customer downloads the module bundle from Superna's portal on an internet-connected machine, transfers it to the appliance (`scp` or equivalent), and runs `arkctl module install <bundle.tar.gz>`. No additional platform configuration required. Platform services (ingress, registry, identity, cert-manager) are already running from bootstrap.
+
+---
+
+## Upgrade strategy
+
+**In-place only.** This matches the delivery shape customers already know from Superna's legacy products and avoids the operational overhead of side-by-side deployments. The checkpointed upgrade sequence is described fully in Deliverable 1 (data flow, Flow 5): validate → OS snapshot → platform Helm upgrades → module upgrades (dependency order) → reboot into new snapshot → post-boot verify. Idempotent resume-from-last-checkpoint on any failure.
+
+**Version skew policy.** Each upgrade bundle's manifest declares `version` (what it produces) and `min-required-version` (the oldest source version it upgrades from). For V1: each bundle supports upgrading from the immediately preceding minor version. A customer on v1.0 wanting v1.2 applies the v1.1 bundle, then v1.2 — two transfers, two maintenance windows. This simplifies the test matrix significantly (each bundle tested against one source version) and matches how Superna's existing products handle this. Cumulative bundles supporting arbitrary version jumps are on the roadmap for when sequential hops become a real operational burden at fleet scale.
+
+**Rollback.** If post-upgrade verification fails, `arkctl upgrade rollback` reverses: Helm rollback for each module in reverse dependency order, Helm rollback for platform components, reboot into the previous Btrfs snapshot. PVC data is never rolled back — the Btrfs snapshot covers only the OS filesystem, not the volume mount paths. A rollback restores the platform; data written by modules during the upgrade window remains.
+
+**Customer-driven, never push.** Upgrades are applied by the customer at a time they choose. Superna has no mechanism to push an upgrade to a customer's appliance — consistent with "no Superna-side control plane" and the "no phone-home" regulatory requirement.
+
+---
+
+## Security and supply chain
+
+**Artifact signing.** Every container image is signed with cosign at build time using a key managed in Infisical, before images are loaded into the OVA's Zot registry. The OVA and each upgrade bundle are signed as a whole (detached cosign signature alongside the artifact in Artifactory). `arkctl upgrade apply` verifies the bundle signature before extracting a single byte. Signature failure is a hard stop.
+
+**SBOM.** syft generates a software bill of materials for every OVA and upgrade bundle, covering OS packages, binaries, and all container image layers. The SBOM is stored alongside the artifact in Artifactory and included inside the upgrade bundle so the customer retains it after download. Regulated customers can produce the SBOM for security questionnaires or compliance audits without contacting Superna support.
+
+**CVE path.** JFrog Xray monitors Artifactory continuously. When a new CVE is disclosed against a dependency in a released artifact, Xray flags it and the pipeline rebuild is triggered automatically. The response sequence: triage the CVE against the ARK deployment context → update the affected dependency or base image → rebuild → full scan re-runs → new patch bundle cut and promoted → customer notification via customer portal. Time from CVE disclosure to patch bundle available is a KPI agreed with leadership before first customer ship (open question OQ-5 in the risk register).
+
+**Promotion gates as the quality boundary.** Staging artifacts are test-grade; release artifacts are customer-grade. The promotion gate (manual, requiring security review and QA sign-off) is the only moment where a staging artifact becomes a release artifact. There is no emergency bypass — a security-critical patch still goes through the gate, which is why keeping the gate fast matters as much as keeping it rigorous.
