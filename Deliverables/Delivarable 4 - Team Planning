@@ -1,0 +1,90 @@
+# Deliverable 4 — Phased roadmap
+
+## Capacity assumptions
+
+Three engineers at roughly 70% effective capacity for project work (the remainder is incidents, on-call rotation, code review, 1:1s, and the things that always slip in). Manager-IC at 45% technical contribution; the remainder is management overhead on a three-person team (weekly 1:1s, planning, stakeholder coordination, occasional hiring loops). Q1 carries an additional overhead tax — onboarding to the codebase, environment setup, first architecture review cycles — so effective Q1 output is closer to 60% than 70%. Approximately 125 engineer-weeks of net output across the year.
+
+---
+
+## Phase 1 — Q1 (months 1–3): Walking skeleton
+
+**Goal:** A single-node ARK deploys from OVA in a VMware lab, bootstraps automatically on first boot, and a test workload installs via a minimal `arkctl` prototype. No HA, no production pipeline, no upgrade system — just the core loop proven end-to-end in a real environment.
+
+**Epics in this phase:** E1 (partial — single-node OS image, cloud-init, bootstrap agent, Zot pre-load), E2 (partial — single-node RKE2 and kube-vip, no HA topology yet), E7 (started — self-hosted runner provisioned, manual OVA build process, not yet automated or signed).
+
+**Entry criteria:** openSUSE MicroOS build approach confirmed; VMware test lab available with network isolation; self-hosted runner hardware provisioned; team has read the full brief and aligned on the architecture spine (RKE2, kube-vip, Zot, Longhorn, module operator).
+
+**Definition of done:** A team member who was not involved in the build deploys the OVA to VMware in a fully air-gapped lab, powers on, watches the system bootstrap to healthy without touching a keyboard, and installs a Hello World container via `arkctl module install`. The entire sequence requires no internet, no DNS, no NTP (unless supplied via OVF property).
+
+**Consciously deferred:** HA multi-node topology, module operator CRD (Q1 uses manual Helm), full CLI suite, upgrade system, Longhorn (local-path only in Q1), security scanning and signing in the pipeline, platform services (ingress, cert-manager, identity).
+
+---
+
+## Phase 2 — Q2 (months 4–6): Platform complete
+
+**Goal:** The full platform is running and production-grade. A Superna module team can start building against the `module.yaml` contract. HA is working. A signed OVA comes out of the automated pipeline. This is the milestone that unblocks parallel work across the rest of the organisation.
+
+**Epics in this phase:** E1 (complete — HA-capable OVA, both GuestInfo and generic OVF datasource, full OVF property schema validated), E2 (complete — 3-node HA, kube-vip failover tested and measured, 2-node topology blocked), E3 (complete — ingress, cert-manager with IP SAN, local identity service), E4 (complete — SupernaModule CRD, operator, `module.yaml` spec, dependency resolution, resource governance, network isolation), E6 (Longhorn for multi-node, local-path for single-node), E7 (complete — automated OVA and bundle build, Snyk scan, cosign signing, syft SBOM, Artifactory staging promotion).
+
+**Entry criteria:** Phase 1 complete and walking skeleton validated by at least one end-to-end test. **Critical gate:** `module.yaml` spec reviewed and signed off by at least one future module team lead before E4 development begins. Getting the spec wrong in Q2 costs the most — module teams building on a wrong contract is the highest-risk integration failure mode in the project.
+
+**Definition of done:** A signed OVA produced by the automated pipeline deploys to a 3-node HA cluster; a control-plane node is powered off; traffic resumes within 30 seconds; a real Superna module (not a Hello World stub) installs, runs, and removes via `arkctl module install/remove`; the Artifactory staging artifact carries a valid cosign signature and attached SBOM.
+
+**Consciously deferred:** Optional identity federation (LDAP/AD/OIDC), NFS CSI driver, local-path → Longhorn storage migration tooling, full `arkctl` suite (diagnose, full cluster commands), upgrade system, Xray continuous CVE monitoring (pipeline scan is in, automated rebuild on CVE is Q3).
+
+---
+
+## Phase 3 — Q3 (months 7–9): Upgrade system and CLI complete
+
+**Goal:** A customer could perform a full in-place upgrade end-to-end. The CLI is complete. Storage migration is available. The system is production-capable for early adopters.
+
+**Epics in this phase:** E8 (upgrade system — checkpointed upgrade, rollback, min-version enforcement, resume-on-failure), E5 (CLI — all commands including `arkctl diagnose` with redaction), E6 (complete — NFS CSI driver, local-path → Longhorn migration tooling), E3 addition (optional identity federation — LDAP/AD/OIDC added to the identity service).
+
+**Entry criteria:** Phase 2 complete. At least one Superna module team has built a real module against the `module.yaml` contract and provided feedback on the spec (this feedback loop is critical — module teams will find gaps that internal testing will not). Upgrade bundle format finalised and agreed before E8 development begins.
+
+**Definition of done:** An upgrade from version N to N+1 completes without data loss on a 3-node cluster; an intentionally interrupted upgrade resumes from the last checkpoint correctly; `arkctl diagnose` produces a complete, redacted bundle that Superna support confirms is sufficient for a real support case; a local-path → Longhorn storage migration runs successfully with data integrity verified.
+
+**Consciously deferred:** Full supply chain security hardening (Xray continuous CVE monitoring and automated rebuild automation), performance validation (minimum VM sizing with real workloads), operator documentation (runbooks, module developer guide), formal security review.
+
+---
+
+## Phase 4 — Q4 (months 10–12): Production readiness
+
+**Goal:** ARK is production-grade, security-reviewed, documented, and ready for first customer delivery. A customer could operate ARK day-to-day without Superna engineering on the phone.
+
+**Focus areas (hardening work, not new epics):** Xray continuous CVE monitoring and automated rebuild pipeline fully operational; performance validation — minimum VM sizing confirmed with actual module workloads; operator runbooks and module developer guide written and reviewed; end-to-end test suite covering all critical paths automated in CI; pre-production trial with first identified customer; formal security review including supply chain audit against SBOM.
+
+**Entry criteria:** Phase 3 complete; first customer identified and pre-production environment available; security review scheduled and scoped.
+
+**Definition of done:** ARK passes a security review including supply chain audit; runs successfully in a customer pre-production environment for a minimum of two weeks without engineering escalation; all operator-facing documentation complete enough for field engineers to support without referring to the engineering team.
+
+**Consciously deferred for future quarters:** Cumulative (long-jump) upgrade bundles, fleet visibility product above ARK, optional telemetry opt-in, additional hypervisor platform testing beyond VMware primary and one OVF fallback.
+
+---
+
+## Roadmap at a glance
+
+![Phased roadmap](diagrams/roadmap-gantt.svg)
+
+| Epic | Q1 | Q2 | Q3 | Q4 |
+|------|----|----|----|----|
+| E1 OS & OVA | ████ | ████ | | |
+| E2 Cluster lifecycle | ████ | ████ | | |
+| E3 Platform services | | ████ | ████ | |
+| E4 Module lifecycle | | ████ | ████ | |
+| E5 CLI | | | ████ | ████ |
+| E6 Storage layer | | ████ | ████ | |
+| E7 Build pipeline | ████ | ████ | | |
+| E8 Upgrade system | | | ████ | ████ |
+
+---
+
+## What to cut if Q1 runs two months late
+
+If Q1 slips two months, Phase 2 starts in month 5 instead of month 3. The right move is to drop HA from Phase 2 entirely and defer it to Phase 3.
+
+The reasoning: the module operator (E4) is the highest-leverage item in the plan — it is the contract that every future Superna module team builds against, and the earlier they can start, the more feedback the team gets before the spec calcifies. HA (the multi-node kube-vip topology, etcd quorum validation, Longhorn replication) is important for production, but a single-node deployment is a fully supported first-class shape per the NFRs. An early module team or internal testing cohort can run on single-node through a POC and early integration period.
+
+By cutting HA from Phase 2, roughly three to four weeks of Engineer A's time is recovered. That time goes into E4 (module operator) and E3 (platform services), keeping the module contract on time. HA lands in Phase 3 alongside the upgrade system — still before production readiness, still before first customer delivery.
+
+What does not get cut under any circumstances: the module operator spec review by a future module team before E4 implementation starts; the build pipeline reaching a state where it produces signed artifacts by end of Phase 2; and the single-node walking skeleton being genuinely working (not demo-ware) before Phase 2 begins. These three gates are the ones where cutting corners costs the most downstream.
