@@ -4,11 +4,11 @@
 
 | Epic | Engineer A (Senior) | Engineer B (Mid) | Engineer C (Junior) | Manager IC |
 |------|--------------------|-----------------|--------------------|------------|
-| E1 OS & OVA | **Owner** | | Contributor | |
-| E2 Cluster lifecycle | **Owner** | Contributor | | |
-| E3 Platform services | Reviewer | **Owner** | Contributor | |
+| E1 OS & OVA | **Owner** | | Contributor | |Contributor
+| E2 Cluster lifecycle | **Owner** | Contributor | | |Contributor
+| E3 Platform services | Reviewer | **Owner** | Contributor | |Reviewer 
 | E4 Module lifecycle | **Owner** | | | Spec author + co-owner |
-| E5 CLI | | **Owner** | **Stretch ★ diagnose** | |
+| E5 CLI | | **Owner** | **Stretch ★ diagnose** | |Reviewer 
 | E6 Storage layer | | **Owner** | Contributor | |
 | E7 Build pipeline | | **Owner** | Contributor | |
 | E8 Upgrade system | **Owner** | Contributor | | |
