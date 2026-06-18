@@ -4,7 +4,7 @@
 
 | Epic | Eng A — Senior | Eng B — Mid | Eng C — Junior | Manager IC (Sahil) |
 |------|---------------|------------|----------------|-------------------|
-| **E1** OS & OVA | **Owner** | | Contributor | Reviewer *(MicroOS/Btrfs/OVA not in background)* |
+| **E1** OS & OVA | **Owner** | | Contributor | Reviewer *(MicroOS/Btrfs/OVA)* |
 | **E2** Cluster lifecycle | **Owner** | Contributor | | **Co-owner** *(1,500+ prod nodes at OpenText; HA validation, kube-vip, etcd)* |
 | **E3** Platform services | Reviewer | **Owner** | Contributor | **Co-owner** *(NetworkPolicy, RBAC, TLS — zero-trust at OpenText & Red Hat Canada)* |
 | **E4** Module lifecycle | **Owner** *(Go controller, state machine)* | | | **Spec + Helm** *(module.yaml spec, CRD schema, Helm integration — ArgoCD/GitOps at OpenText)* |
