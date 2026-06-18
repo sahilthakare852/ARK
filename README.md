@@ -10,16 +10,16 @@
 
 | File | Deliverable | Budget |
 |------|-------------|--------|
-| [01-system-design.md](01-system-design.md) | System design | ~120 min |
-| [02-build-packaging-release.md](02-build-packaging-release.md) | Build, packaging, and release strategy | ~60 min |
-| [03-jira-epics.md](03-jira-epics.md) | Jira epic structure | ~30 min |
-| [04-phased-roadmap.md](04-phased-roadmap.md) | Phased roadmap | ~30 min |
-| [05-team-assignment.md](05-team-assignment.md) | Team assignment plan | ~20 min |
-| [06-risk-register.md](06-risk-register.md) | Risk register and open questions | ~30 min |
-| [07-leadership-summary.md](07-leadership-summary.md) | Leadership summary (one page) | ~30 min |
-| [07-leadership-summary.pdf](07-leadership-summary.pdf) | Leadership summary — PDF format | — |
+| [01-system-design.md](Deliverables/01-system-design.md) | System design | ~120 min |
+| [02-build-packaging-release.md](Deliverables/02-build-packaging-release.md) | Build, packaging, and release strategy | ~60 min |
+| [03-jira-epics.md](Deliverables/03-jira-epics.md) | Jira epic structure | ~30 min |
+| [04-phased-roadmap.md](Deliverables/04-phased-roadmap.md) | Phased roadmap | ~30 min |
+| [05-team-assignment.md](Deliverables/05-team-assignment.md) | Team assignment plan | ~20 min |
+| [06-risk-register.md](Deliverables/06-risk-register.md) | Risk register and open questions | ~30 min |
+| [07-leadership-summary.md](Deliverables/07-leadership-summary.md) | Leadership summary (one page) | ~30 min |
+| [07-leadership-summary.pdf](Deliverables/07-leadership-summary.pdf) | Leadership summary — PDF format | — |
 
-Diagrams are in the [`diagrams/`](diagrams/) folder and referenced inline from each deliverable.
+Diagrams are in the [`Diagrams/`](Diagrams/) folder and referenced inline from each deliverable.
 
 ---
 

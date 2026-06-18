@@ -4,7 +4,7 @@
 
 Two artifact types, one constraint that shapes everything: every image, chart, and binary the appliance will ever need at runtime must be present in the artifact at the time it leaves Superna's build system. Nothing is fetched at install time.
 
-![Build pipeline](Diagrams/PipelineFlow.png)
+![Build pipeline](../Diagrams/PipelineFlow.png)
 
 Bitbucket Pipelines orchestrates the build on self-hosted runners. Self-hosted runners are non-negotiable: OVA construction requires tens of gigabytes of disk space, access to a hypervisor toolchain (QEMU/KVM or VMware's OVF tool), and build times that would exhaust cloud runner quotas. Runners must be network-isolated from production but have internet access for pulling upstream images at build time.
 

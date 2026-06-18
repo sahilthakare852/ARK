@@ -4,7 +4,7 @@
 
 Eight epics decompose the work. Each is described with its goal and definition of done, followed by representative key stories. Cross-epic dependencies follow the epic summaries.
 
-![Epic dependency graph](diagrams/epics.png)
+![Epic dependency graph](../Diagrams/epics.png)
 
 ---
 

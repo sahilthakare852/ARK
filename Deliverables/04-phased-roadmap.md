@@ -64,7 +64,7 @@ Three engineers at roughly 70% effective capacity for project work (the remainde
 
 ## Roadmap at a glance
 
-![Phased roadmap](diagrams/roadmap-gantt.svg)
+![Phased roadmap](../Diagrams/roadmap-gantt.svg)
 
 | Epic | Q1 | Q2 | Q3 | Q4 |
 |------|----|----|----|----|

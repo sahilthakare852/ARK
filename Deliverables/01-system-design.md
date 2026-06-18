@@ -112,7 +112,7 @@ Each module owns its own functionality, its own data schema, and its own RPO/RTO
 
 **Self-extracting upgrade bundle** — not a running component, but the boundary artifact between Superna's build pipeline (which has internet access) and the appliance (which never does). The pipeline bakes everything the appliance needs into the bundle at build time.
 
-Diagram: SystemDesign1.png
+![System Design](../Diagrams/SystemDesign1.png)
 
 ---
 
@@ -127,7 +127,7 @@ The bootstrap agent writes the RKE2 server configuration and starts the `rke2-se
 
 The system reaches working state — all platform pods Running, `arkctl cluster status` healthy — without an operator logging in. End-to-end time: under 10 minutes from power-on.
 
-![Bootstrap flow] BootStrapflow.png
+![Bootstrap flow](../Diagrams/BootStrapflow.png)
 
 ### Flow 2 — Module install and lifecycle
 
@@ -156,7 +156,7 @@ Control-plane node goes unreachable. etcd retains quorum (2 of 3 members). If th
 
 On any failure: re-running `arkctl upgrade apply` resumes from the last incomplete checkpoint, not from the beginning. PVC mount paths are excluded from the Btrfs snapshot boundary — a platform rollback (booting the previous snapshot) never touches module data.
 
-![Upgrade checkpoint flow]Upgradeflow.png
+![Upgrade checkpoint flow](../Diagrams/Upgradeflow.png)
 
 
 ### Consistency model
