@@ -24,7 +24,7 @@ The OVA is the complete, self-contained virtual machine image for first deployme
 
 - **openSUSE MicroOS base** — immutable root filesystem with transactional-update and Btrfs subvolume layout. PVC mount paths are on a separate subvolume excluded from OS snapshots.
 - **Platform binaries** — RKE2 server and agent binaries, `arkctl` CLI, bootstrap agent systemd service.
-- **Pre-seeded Zot registry** — every container image the platform needs to reach a healthy state, loaded at build time. Includes: kube-vip, cert-manager and its webhook images, ingress-nginx, Longhorn components (manager, driver, CSI plugin, UI), module operator, identity service. No runtime internet access required for any of these.
+- **Pre-seeded Zot registry** — every container image the platform needs to reach a healthy state, loaded at build time. Includes: kube-vip, cert-manager and its webhook images, Traefik, Longhorn components (manager, driver, CSI plugin, UI), module operator, identity service. No runtime internet access required for any of these.
 - **Platform Helm charts** — stored as OCI artifacts inside Zot, alongside the images they deploy.
 
 Modules are not in the OVA — they ship as separate bundles because module teams have independent release cadences and customers may want only a subset of Superna's products.
