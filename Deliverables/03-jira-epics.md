@@ -51,7 +51,7 @@ Eight epics decompose the work. Each is described with its goal and definition o
 **Key stories:**
 - Deploy cert-manager with self-signed internal CA (separate from RKE2's internal cluster PKI)
 - Implement IP SAN certificate issuance from OVF VIP parameter
-- Deploy ingress-nginx bound to platform VIP
+- Deploy Traefik bound to platform VIP
 - Implement local identity service (account management, credential hashing)
 - Implement optional LDAP/AD/OIDC federation (additive, fails safely to local accounts)
 - Apply platform-level NetworkPolicy baseline
