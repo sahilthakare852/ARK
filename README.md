@@ -1,7 +1,6 @@
 # ARK Platform — Take-Home Design Exercise
 
 **Candidate:** Sahil Ashok Thakare
-**Role:** DevOps Manager, Superna  
 **Submitted:** June 2026
 
 ---
